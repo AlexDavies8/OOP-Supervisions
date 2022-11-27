@@ -1,11 +1,11 @@
 package Core;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 public interface IUI {
-    public void Setup();
-    public void InjectToEventLoop(Runnable action);
+    public void Setup(Game game);
+    public void RegisterTick(Consumer<Integer> action);
     public void Quit();
-    
-    public void DrawPet(Pet pet);
+    public int GetTicksPerSecond();
 }

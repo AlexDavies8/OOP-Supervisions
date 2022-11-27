@@ -11,11 +11,7 @@ public class Main {
     }
 
     private static IUI GetConsoleUI() {
-        var ui = new ConsoleUI.ConsoleUI(80, 20);
-        var basePath = new File("").getAbsolutePath()+"\\resources\\";
-
-        ConsoleUI.Resources.LoadAnimation("ninja_idle_happy", basePath + "ninja_idle_happy.txt");
-
+        var ui = new ConsoleUI.ConsoleUI(120, 30);
         return ui;
     }
 

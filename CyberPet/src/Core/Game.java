@@ -1,70 +1,83 @@
 package Core;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Game {
-    private List<Pet> _pets;
-    private IUI _ui;
-    private GameState _gameState = GameState.PetInfo;
-    private StateMachine _gameStateManager;
-    private Boolean _running = true;
-
+    private final IUI _ui;
+    private GameState _state = GameState.Menu;
+    private final List<Pet> _loadedPets = new ArrayList<Pet>();
+    private int _money = 0;
+    
+    public List<Pet> GetLoadedPets() {
+        return _loadedPets;
+    }
+    
+    public GameState GetState() {
+        return _state;
+    }
+    public void SetState(GameState state) {
+        _state = state;
+    }
+    public int GetMoney() {
+        return _money;
+    }
+    public void AddMoney(int amount) {
+        _money += amount;
+    }
+    
     public Game(IUI ui) {
         _ui = ui;
-        _pets = new ArrayList<Pet>();
-
-        Setup();
-    }
-
-    private void Setup() {
-        // UI Setup
-        _ui.Setup();
-
-        // Game State Setup
-        _gameStateManager = new StateMachine();
-        var menu = new CommandState(() -> {
-
-        });
-        var petGallery = new CommandState(() -> {
-
-        });
-        var petInfo = new CommandState(() -> {
-
-        });
-        var shop = new CommandState(() -> {
-
-        });
-        _gameStateManager.AddAnyTransition(menu, () -> _gameState.equals(GameState.Menu));
-        _gameStateManager.AddAnyTransition(petGallery, () -> _gameState.equals(GameState.PetGallery));
-        _gameStateManager.AddAnyTransition(petInfo, () -> _gameState.equals(GameState.PetInfo));
-        _gameStateManager.AddAnyTransition(shop, () -> _gameState.equals(GameState.Shop));
         
-        // Pets Setup
-        _pets.add(new Pet("ninja"));
-    }
-
-    public void Run() {
-        _ui.InjectToEventLoop(this::Tick); // UI Provides the event loop
-    }
-
-    private Boolean Tick() {
-        _gameStateManager.Tick();
-        
-        if (!_gameState.equals(GameState.Menu)) { // Simulate as long as not on main menu
-            for (var pet : _pets) {
-                _ui.DrawPet(pet);
-            }
+        File folder = new File("resources/pets");
+        File[] petFiles = folder.listFiles();
+        for (var file : petFiles) {
+            if (file.isFile()) _loadedPets.add(Pet.LoadFromFile(file.getAbsolutePath()));
         }
         
-        return _running;
+        AddMoney(1705);
+        
+        _ui.Setup(this);
     }
-
-    private enum GameState {
+    
+    public void Run() {
+        _ui.RegisterTick(this::Tick);
+    }
+    
+    private void Tick(int time) {
+        for (var pet : _loadedPets) {
+            if (pet.IsOwned()) {
+                pet.Tick();
+                float ticksPerEarning =  _ui.GetTicksPerSecond() * 2f / pet.Earn();
+                if (RepeatInterval(time, Math.max(1, (int)ticksPerEarning))) {
+                    AddMoney(Math.max(1, (int)(1f / ticksPerEarning)));
+                }
+            }
+        }
+    }
+    
+    private boolean RepeatInterval(int time, int interval) {
+        if (interval == 1) return true;
+        return (time % interval) / (interval-1) == 1;
+    }
+    
+    public enum GameState {
         Menu,
-        PetGallery,
-        PetInfo,
+        Gallery,
+        Info,
         Shop
+    }
+    
+    public Pet GetPetByID(String id) {
+        return _loadedPets.stream().filter(p -> p.ID.equals(id)).findAny().orElse(null);
+    }
+    
+    public void BuyPet(Pet pet) {
+        if (GetMoney() >= pet.Cost) {
+            pet.Own();
+            AddMoney(-pet.Cost);
+        }
     }
 }

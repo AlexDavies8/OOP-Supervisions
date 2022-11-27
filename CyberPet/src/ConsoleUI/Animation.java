@@ -10,6 +10,10 @@ import java.util.List;
 public class Animation {
     private final List<Frame> _frames;
     private int _length;
+    
+    public int GetLength() {
+        return _length;
+    }
 
     public Animation() {
         _frames = new ArrayList<Frame>();
